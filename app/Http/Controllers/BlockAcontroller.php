@@ -9,21 +9,56 @@ class BlockAcontroller extends Controller
     public function blockA(Request $request)
     {
 
+    $dimensionArray = [];
+    $arrayResults= [];
+    $arrayMultp = [];
 
-        $r1 = $request->idsD[1];
-        $r2 = $request->idsD[2];
-        $r3 = $request->idsD[3];
-        $r4 = $request->idsD[4];
-        $r5 = $request->idsD[5];
+    $dimensionArray[1] = ["E","A","D","B","C","F"];
+    $dimensionArray[2] = ["F","C","E","A","D","B"];
+    $dimensionArray[3] = ["C","E","A","F","D","B"];
+    $dimensionArray[4] = ["B","F","E","D","A","C"];
+    $dimensionArray[5] = ["D","C","F","B","E","A"];
+  
+for ($i=0;$i<5;$i++)
+{
+ $arrayPosition= array_search($request->idsD[$i+1],$dimensionArray[$i+1]);
+   if (!isset($arrayResults[$arrayPosition]))
+   {
+     $arrayResults[$arrayPosition] = 1;
+}   else {
+    $arrayResults[$arrayPosition] +=1;
+   }
+}
 
-        $arrayX = [];
+for ($i=1;$i<=5;$i++)
+{
+
+}
+   return response()->json([
+        'arrayResults' => $arrayResults,
+    ]);
+    
+        $r1 = $request->idsR[1];
+        $r2 = $request->idsR[2];
+        $r3 = $request->idsR[3];
+        $r4 = $request->idsR[4];
+        $r5 = $request->idsR[5];
+
+        $arrayP = [];
+
+    $arrayX = [];
+    
+
+
+
         $d_dim1=["E","A","D","B","C","F"];
         $d_dim2=["F","C","E","A","D","B"];
         $d_dim3=["C","E","A","F","D","B"];
         $d_dim4=["B","F","F","D","B"];
         $d_dim5=["C","D","B","A","E"];
         $d_dim6=["F","B","D","C","A"];
-        
+     
+
         $r1Posicion = array_search($r1, $d_dim1);
         
         $r2Posicion = array_search($r2, $d_dim2);
