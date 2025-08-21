@@ -19,17 +19,41 @@ class BlockAcontroller extends Controller
     $dimensionArray[4] = ["B","F","E","D","A","C"];
     $dimensionArray[5] = ["D","C","F","B","E","A"];
   
-for ($i=0;$i<5;$i++)
+for ($i=1;$i<=5;$i++)
 {
- $arrayPosition= array_search($request->idsD[$i+1],$dimensionArray[$i+1]);
-   if (!isset($arrayResults[$arrayPosition]))
+ $arrayPosition= array_search($request->idsD[$i],$dimensionArray[$i]);
+   if (!isset($arrayResults[$arrayPosition+1]))
    {
-     $arrayResults[$arrayPosition] = 1;
+     $arrayResults[$arrayPosition+1] = 1;
 }   else {
-    $arrayResults[$arrayPosition] +=1;
+    $arrayResults[$arrayPosition+1] +=1;
    }
 }
 
+for ($i=1;$i<=6;$i++)
+{
+  if (!isset($arrayResults[$i]))
+   {
+     $arrayMultp[$i] = 0;
+}   else {
+    $arrayMultp[$i] = $arrayResults[$i]*$i;
+   }
+}
+
+return response()->json([
+        'arrayResults' => $arrayResults,
+        'arrayMultp' => $arrayMultp
+    ]);
+
+    $arrayMultp = [];
+    for ($i=1;$i<=5;$i++)
+    {
+        $arrayMultp[$i] = $request->idsD[$i] * $arrayResults[$i];
+    }
+
+    return response()->json([
+        'arrayMultp' => $arrayMultp,
+    ]);
 for ($i=1;$i<=5;$i++)
 {
 
