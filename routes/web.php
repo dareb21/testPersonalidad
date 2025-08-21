@@ -1,12 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BlockAcontroller;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
 
-Route::get('blockA', function () {
-    return 'This is a test route.';
-});
+Route::post('blockA', [App\Http\Controllers\BlockAcontroller::class, 'blockA']);
