@@ -122,7 +122,7 @@ for ($i=1;$i<=6;$i++)
    {
      $totD[$i] = 0;
 }   else {
-    $totD[$i] = $arrayResults[$i]*$i;
+    $totD[$i] = $arrayResults[$i];
    }
 }
 //Sumo todas las dimensiones 1 de la parte a hasta la D
@@ -144,6 +144,35 @@ $finalArray = [
 ];
 arsort($finalArray);
 $top3 = array_slice($finalArray, 0, 3, true);
+return response()->json([
+  "totA1" => $totA1,
+  "totA2" => $totA2,
+  "totA3" => $totA3,
+  "totA4" => $totA4,
+  "totA5" => $totA5,
+  "totA6" => $totA6,
+  "totB1" => $totB1,
+  "totB2" => $totB2,
+  "totB3" => $totB3,
+  "totB4" => $totB4,
+  "totB5" => $totB5,
+  "totB6" => $totB6,
+  "totC1" => $totC1,
+  "totC2" => $totC2,
+  "totC3" => $totC3,
+  "totC4" => $totC4,
+  "totC5" => $totC5,
+  "totC6" => $totC6,
+  "totD1" => $totD[1],
+  "totD2" => $totD[2],
+  "totD3" => $totD[3],
+  "totD4" => $totD[4],
+  "totD5" => $totD[5],
+  "totD6" => $totD[6],
+  "finalArray" => $finalArray,
+  "top3" => $top3  
+]);
+
 return response()->json($top3);
 }
 }
