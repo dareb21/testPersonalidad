@@ -9,7 +9,7 @@ class BlockAcontroller extends Controller
     public function blockA(Request $request)
     {
      
-    //Bloque A
+    //Bloque A TODO EESTE BLOQUE ESTA BUENO.
         $optionsA = $request->idsA;
         $dimA1 = [3,11,18,21,24,27,35,44];
         $dimA2 = [8,19,29,31,33,36,37,43];
@@ -35,7 +35,7 @@ class BlockAcontroller extends Controller
         
         $intersectDimA6 = array_intersect($dimA6, $optionsA);
         $totA6 = array_sum($intersectDimA6);
-     
+   
 //Bloque B
         $b_onlyA = array_filter($request->idsB, fn($value) => $value === "A");       
         $optionsB = array_keys($b_onlyA);
@@ -48,16 +48,15 @@ class BlockAcontroller extends Controller
         $intersectB1 = array_intersect($dimB1, $optionsB);
         $totB1 = array_sum($intersectB1);
 
-
         $intersectB2 = array_intersect($dimB2, $optionsB);
         $totB2 = array_sum($intersectB2);
         
         $intersectB3 = array_intersect($dimB3, $optionsB);
         $totB3 = array_sum($intersectB3);
-        
-        $intersectB4 = array_intersect($dimB4, $optionsB);
+           
+   $intersectB4 = array_intersect($dimB4, $optionsB);
         $totB4 = array_sum($intersectB4);
-        
+  
         $intersectB5 = array_intersect($dimB5, $optionsB);
         $totB5 = array_sum($intersectB5);
         
@@ -94,6 +93,7 @@ class BlockAcontroller extends Controller
         $intersectC6 = array_intersect($dimC6, $optionsC);
         $totC6 = array_sum($intersectC6);
 
+
 //BLOQUE D
  $dimensionArray = [];
     $arrayResults= [];
@@ -101,7 +101,7 @@ class BlockAcontroller extends Controller
 
     $dimensionArray[1] = ["E","A","D","B","C","F"];
     $dimensionArray[2] = ["F","C","E","A","D","B"];
-    $dimensionArray[3] = ["C","E","A","F","D","B"];
+    $dimensionArray[3] = ["C","E","A","F","B","D"];
     $dimensionArray[4] = ["B","F","E","D","A","C"];
     $dimensionArray[5] = ["D","C","F","B","E","A"];
   
@@ -125,7 +125,8 @@ for ($i=1;$i<=6;$i++)
     $totD[$i] = $arrayResults[$i];
    }
 }
-//Sumo todas las dimensiones 1 de la parte a hasta la D
+
+
 
 $tot1= $totA1 + $totB1 + $totC1 + $totD[1];
 $tot2= $totA2 + $totB2 + $totC2 + $totD[2];
@@ -145,30 +146,6 @@ $finalArray = [
 arsort($finalArray);
 $top3 = array_slice($finalArray, 0, 3, true);
 return response()->json([
-  "totA1" => $totA1,
-  "totA2" => $totA2,
-  "totA3" => $totA3,
-  "totA4" => $totA4,
-  "totA5" => $totA5,
-  "totA6" => $totA6,
-  "totB1" => $totB1,
-  "totB2" => $totB2,
-  "totB3" => $totB3,
-  "totB4" => $totB4,
-  "totB5" => $totB5,
-  "totB6" => $totB6,
-  "totC1" => $totC1,
-  "totC2" => $totC2,
-  "totC3" => $totC3,
-  "totC4" => $totC4,
-  "totC5" => $totC5,
-  "totC6" => $totC6,
-  "totD1" => $totD[1],
-  "totD2" => $totD[2],
-  "totD3" => $totD[3],
-  "totD4" => $totD[4],
-  "totD5" => $totD[5],
-  "totD6" => $totD[6],
   "finalArray" => $finalArray,
   "top3" => $top3  
 ]);
