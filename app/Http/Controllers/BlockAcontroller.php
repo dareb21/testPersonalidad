@@ -145,10 +145,6 @@ $finalArray = [
 ];
 arsort($finalArray);
 $top3 = array_slice($finalArray, 0, 3, true);
-return response()->json([
-  "finalArray" => $finalArray,
-  "top3" => $top3  
-]);
 
 return response()->json($top3);
 }
