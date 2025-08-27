@@ -484,7 +484,7 @@ public function report(Request $request)
 HTML;
 
     // 6) Generar PDF (ajusta tamaño a tu preferencia)
-    $pdf = Pdf::loadHTML($html)->setPaper('a5', 'portrait'); // cambia a 'a5' si lo prefieres
+    $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait'); // cambia a 'a5' si lo prefieres
 
     return $pdf->download('informe_vocacional.pdf');
 }
