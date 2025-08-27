@@ -152,7 +152,7 @@ return response()->json($top3);
 
 public function report(Request $request)
 {
-    // 1) Leer y normalizar "traits" (puede venir como array o como string JSON)
+    // 1) Normalizar "traits" (puede venir como array o string JSON)
     $input  = $request->input('traits');
     $traits = $input;
 
@@ -162,7 +162,7 @@ public function report(Request $request)
             if (isset($decoded['traits']) && is_array($decoded['traits'])) {
                 $traits = $decoded['traits'];
             } elseif (is_array($decoded)) {
-                $traits = $decoded; // podría venir como array de objetos directamente
+                $traits = $decoded; // podría venir como array directo
             }
         }
     }
@@ -171,32 +171,39 @@ public function report(Request $request)
         return response()->json(['message' => 'Formato de traits inválido'], 422);
     }
 
-    // 2) Ordenar por score desc para sacar el Top 3
+    // 2) Ordenar por score desc y tomar Top 3 para las tarjetas
     usort($traits, fn($a, $b) => ($b['score'] ?? 0) <=> ($a['score'] ?? 0));
 
-    // 3) Construir HTML de las tarjetas (Top 3)
     $badges  = ['badge-primary', 'badge-secondary', 'badge-tertiary'];
     $lugares = ['Primer Lugar', 'Segundo Lugar', 'Tercer Lugar'];
 
-    $cardsHtml = '';
-    foreach (array_slice($traits, 0, 3) as $i => $trait) {
+    // 3) Tarjetas en UNA FILA usando TABLE (DomPDF lo respeta mejor que inline-block)
+    $cardsHtml = '<table class="cards"><tr>';
+    $top = array_slice($traits, 0, 3);
+    foreach ($top as $i => $trait) {
         $title = e($trait['title'] ?? '—');
         $cardsHtml .= '
-            <div class="result-card">
-                <div class="badge '.$badges[$i].'">'.($i+1).'</div>
-                <div class="card-body">
-                    <div class="result-rank">'.$lugares[$i].'</div>
-                    <div class="result-name">'.$title.'</div>
+            <td>
+                <div class="result-card">
+                    <div class="badge '.$badges[$i].'">'.($i+1).'</div>
+                    <div class="card-body">
+                        <div class="result-rank">'.$lugares[$i].'</div>
+                        <div class="result-name">'.$title.'</div>
+                    </div>
                 </div>
-            </div>';
+            </td>';
     }
+    // Rellenar celdas si hay menos de 3 (para mantener la fila)
+    for ($i = count($top); $i < 3; $i++) {
+        $cardsHtml .= '<td></td>';
+    }
+    $cardsHtml .= '</tr></table>';
 
-    // 4) Construir HTML de la lista completa de traits (descripción + características)
+    // 4) Lista completa de traits (descripción + características)
     $traitsHtml = '';
     foreach ($traits as $trait) {
         $title = e($trait['title'] ?? '—');
         $desc  = e($trait['description'] ?? '');
-
         $traitsHtml .= '
             <div class="trait-box">
                 <div class="trait-title">'.$title.'</div>
@@ -213,278 +220,166 @@ public function report(Request $request)
             </div>';
     }
 
-    // 5) HTML base (TU versión con cambios) inyectando $cardsHtml y $traitsHtml
+    // 5) HTML base optimizado para A5 (3 tarjetas en fila + tipografías compactas)
     $html = <<<HTML
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Informe Vocacional - Tu futuro comienza aquí</title>
-        <style>
-            /* Tipografía y contenedor principal */
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-                color: #0f172a; /* darker slate */
-                background: #ffffff;
-                margin: 0;
-                padding: 26px;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Informe Vocacional - Tu futuro comienza aquí</title>
+<style>
+    /* Dimensiones y ajustes para A5 */
+    @page { margin: 10mm 8mm; }
 
-            .container {
-                max-width: 840px;
-                margin: 0 auto;
-            }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        color: #0f172a;
+        background: #ffffff;
+        margin: 0;
+        padding: 8px 6px; /* más compacto para A5 */
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-size: 12px; /* base un poco más pequeña */
+        line-height: 1.35;
+    }
 
-            header {
-                text-align: center;
-                margin-bottom: 22px;
-            }
+    .container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+    }
 
-            h1 {
-                font-size: 32px;
-                margin: 0 0 6px 0;
-                color: #0b5fff; /* vivid blue title */
-                line-height: 1.05;
-            }
+    header { text-align: center; margin-bottom: 12px; }
+    h1 { font-size: 22px; margin: 0 0 6px 0; color: #0b5fff; line-height: 1.1; }
 
-            .lead {
-                font-size: 15px;
-                color: #ffffff; /* slate */
-                line-height: 1.5;
-                margin: 6px 0 0 0;
-            }
-            .lead-2{
-                font-size: 15px;
-                color: #070606;
-                line-height: 1.5;
-                margin: 6px 0 0 0;
-            }
+    .lead { font-size: 12px; color: #ffffff; line-height: 1.45; margin: 4px 0 0 0; }
+    .lead-2 { font-size: 12px; color: #070606; line-height: 1.45; margin: 4px 0 0 0; }
 
-            /* Área de pantalla de resultados */
-            .results-screen {
-                background: #f8fafc;
-                padding: 16px;
-                margin: 16px 0;
-                border-radius: 10px;
-                box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
-                border: 1px solid #e6eef8;
-            }
+    /* Resultados principales */
+    .results-screen {
+        background: #f8fafc;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+        border: 1px solid #e6eef8;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
 
-            .results-title {
-                font-size: 16px;
-                font-weight: 700;
-                color: #0f172a;
-                margin-bottom: 12px;
-                text-align: center;
-            }
+    .results-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 8px;
+        text-align: center;
+    }
 
-            .results-list {
-                white-space: normal;
-            }
+    /* Tabla para asegurar 3 columnas */
+    .cards {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 6px; /* separación entre tarjetas */
+        margin: 0 auto;
+    }
+    .cards td {
+        width: 33.33%;
+        padding: 0;
+        vertical-align: top;
+    }
 
-            .result-card {
-                display: inline-block;
-                vertical-align: top;
-                width: 30%;
-                box-sizing: border-box;
-                padding: 12px;
-                margin-right: 3.333%;
-                background: #ffffff;
-                border: 1px solid #eef6ff;
-                border-radius: 8px;
-                text-align: center;
-                font-size: 14px;
-                box-shadow: 0 6px 12px rgba(15, 23, 42, 0.04);
-            }
+    .result-card {
+        width: 100%;
+        background: #ffffff;
+        padding: 10px;
+        border: 1px solid #eef6ff;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 12px;
+        box-shadow: 0 4px 8px rgba(15, 23, 42, 0.04);
+        break-inside: avoid;
+        page-break-inside: avoid;
+        min-height: 90px;
+    }
 
-            /* Ensure every third card doesn't keep a right margin so three cards fit on a row */
-            .result-card:nth-child(3n) { margin-right: 0; }
+    .result-card .badge {
+        display: inline-block;
+        width: 34px;
+        height: 34px;
+        line-height: 34px;
+        border-radius: 50%;
+        color: white;
+        font-weight: 700;
+        margin-bottom: 6px;
+        font-size: 14px;
+    }
+    .badge-primary { background: #0b5fff; }
+    .badge-secondary { background: #06b6d4; }
+    .badge-tertiary { background: #64748b; }
 
-            .card-body { text-align: center; }
-            .result-rank, .result-name { text-align: center; }
-            .card-body .result-rank { color: #475569; font-size: 13px; margin-bottom: 4px; }
+    .result-rank { font-size: 11px; color: #475569; margin-bottom: 4px; }
+    .result-name { font-size: 13px; font-weight: 800; margin-bottom: 4px; color: #0f172a; text-transform: capitalize; }
 
-            .result-card .badge {
-                display: inline-block;
-                width: 44px;
-                height: 44px;
-                line-height: 44px;
-                border-radius: 50%;
-                color: white;
-                font-weight: 700;
-                margin-bottom: 10px;
-            }
+    /* Traits */
+    .traits { margin-top: 10px; margin-bottom: 12px; }
+    .trait-box {
+        border: 1px solid #eef2ff;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 4px 10px rgba(11, 92, 255, 0.03);
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    .trait-title { font-size: 13px; font-weight: 800; color: #0b5fff; margin-bottom: 4px; }
+    .trait-desc  { font-size: 12px; color: #334155; line-height: 1.45; margin-bottom: 6px; word-wrap: break-word; }
+    .trait-list ul { margin: 6px 0 0 18px; font-size: 12px; }
 
-            .badge-primary { background: #0b5fff; }
-            .badge-secondary { background: #06b6d4; }
-            .badge-tertiary { background: #64748b; }
+    footer {
+        margin-top: 14px;
+        padding: 12px;
+        background: #0b5fff;
+        color: #ffffff;
+        border-radius: 8px;
+        text-align: center;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    .contact-cta { display: block; background: transparent; color: #ffffff; padding: 8px 6px; border-radius: 6px; margin: 8px auto 0; max-width: 100%; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Tu futuro comienza aquí.</h1>
+        <p class="lead-2">Este informe refleja tus intereses y fortalezas, ayudándote a descubrir las carreras que mejor se alinean con tu propósito y tu potencial.</p>
+    </header>
 
-            .result-rank {
-                font-size: 13px;
-                color: #475569;
-                margin-bottom: 6px;
-            }
+    <section class="results-screen" aria-labelledby="results-heading">
+        <div class="results-title" id="results-heading">Resultados principales</div>
+        {$cardsHtml}
+    </section>
 
-            .result-name {
-                font-size: 17px;
-                font-weight: 800;
-                margin-bottom: 6px;
-                color: #0f172a;
-                text-transform: capitalize;
-            }
+    <section class="traits" aria-labelledby="traits-heading">
+        {$traitsHtml}
+    </section>
 
-            .result-desc {
-                font-size: 13px;
-                color: #334155;
-                line-height: 1.45;
-            }
+    <p style="font-size:12px; margin-top:6px;">Elegir tu carrera es descubrir la mejor versión de ti.</p>
 
-            /* Descripciones de cada trait */
-            .traits {
-                margin-top: 12px;
-                margin-bottom: 18px;
-            }
-
-            .trait-box {
-                border: 1px solid #eef2ff;
-                padding: 14px;
-                margin-bottom: 12px;
-                border-radius: 8px;
-                background: #ffffff;
-                box-shadow: 0 6px 16px rgba(11, 92, 255, 0.03);
-            }
-
-            .trait-title {
-                font-size: 16px;
-                font-weight: 800;
-                color: #0b5fff;
-                margin-bottom: 6px;
-            }
-
-            .trait-desc {
-                font-size: 14px;
-                color: #334155;
-                line-height: 1.5;
-                margin-bottom: 8px;
-            }
-
-            .trait-list ul { margin: 6px 0 0 20px; }
-
-            footer {
-                margin-top: 22px;
-                padding: 18px;
-                background: #0b5fff; /* blue background for entire footer */
-                color: #ffffff; /* white text */
-                border-radius: 10px;
-                text-align: center;
-            }
-
-            .cta {
-                font-weight: 700;
-                margin-top: 8px;
-                color: #ffffff;
-            }
-
-            .contact {
-                margin-top: 8px;
-                font-size: 15px;
-                color: #ffffff;
-            }
-
-            /* CTA contact block - full width appearance inside footer */
-            .contact-cta {
-                display: block;
-                background: transparent; /* footer already blue */
-                color: #ffffff;
-                padding: 10px 6px;
-                border-radius: 6px;
-                margin: 10px auto 0 auto;
-                max-width: 760px;
-            }
-
-            /* Print-focused styles: make everything larger y 3 en línea en PDF */
-            @media print {
-                body { padding: 18px; font-size: 14px; }
-                .container { max-width: 100% !important; }
-
-                .results-list { text-align: center !important; font-size: 0 !important; }
-                .result-card {
-                    display: inline-block !important;
-                    width: 31% !important;
-                    box-sizing: border-box;
-                    margin-right: 2% !important;
-                    margin-bottom: 14px !important;
-                    padding: 12px 16px !important;
-                    box-shadow: none !important;
-                    border: 1px solid #e6eef8 !important;
-                    font-size: 14px !important;
-                    vertical-align: top;
-                    break-inside: avoid;
-                    page-break-inside: avoid;
-                }
-                .result-card:nth-child(3n) { margin-right: 0 !important; }
-
-                .result-card .badge {
-                    display: block; margin: 0 auto 10px auto;
-                    width: 56px; height: 56px; line-height: 56px; font-size: 18px;
-                }
-                .result-card .card-body { display: block; padding-left: 0; text-align: center; }
-                .result-name { font-size: 20px !important; }
-                .result-desc { font-size: 15px !important; }
-
-                .results-screen { break-inside: avoid; page-break-inside: avoid; }
-                .results-title, .trait-title { break-after: avoid; page-break-after: avoid; }
-
-                .trait-box { break-inside: avoid; page-break-inside: avoid; padding: 16px !important; font-size: 15px !important; }
-                .trait-title { font-size: 18px !important; }
-                .trait-desc  { font-size: 15px !important; }
-
-                .result-name, .trait-title, .results-title, #traits-heading { break-after: avoid; page-break-after: avoid; }
-                .result-name, .result-rank, .result-desc { break-inside: avoid; page-break-inside: avoid; }
-
-                .results-list { display: block !important; }
-                footer { page-break-inside: avoid; break-inside: avoid; border-radius: 6px; padding: 18px !important; }
-            }
-
-            @media (max-width: 640px) {
-                .result-card { width: 100%; margin-right: 0; margin-bottom: 10px; }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <header>
-                <h1>Tu futuro comienza aquí.</h1>
-                <p class="lead-2">Este informe refleja tus intereses y fortalezas, ayudándote a descubrir las carreras que mejor se alinean con tu propósito y tu potencial.</p>
-            </header>
-
-            <section class="results-screen" aria-labelledby="results-heading">
-                <div class="results-title" id="results-heading">Resultados principales</div>
-                <div class="results-list">
-                    {$cardsHtml}
-                </div>
-            </section>
-
-            <section class="traits" aria-labelledby="traits-heading">
-                {$traitsHtml}
-            </section>
-
-            <p style="font-size:15px; margin-top:6px;">Elegir tu carrera es descubrir la mejor versión de ti.</p>
-
-            <footer>
-                <p class="lead">En USAP creemos en tu talento y estamos listos para acompañarte en este viaje hacia el éxito.</p>
-                <div class="contact contact-cta">📞 Contáctanos al <strong>9434-1344</strong> y agenda una cita con tu Asesor de Admisiones para explorar tus opciones y dar el siguiente paso hacia tu futuro.</div>
-            </footer>
-        </div>
-    </body>
+    <footer>
+        <p class="lead" style="color:#fff; margin:0;">En USAP creemos en tu talento y estamos listos para acompañarte en este viaje hacia el éxito.</p>
+        <div class="contact-cta">📞 Contáctanos al <strong>9434-1344</strong> y agenda una cita con tu Asesor de Admisiones para explorar tus opciones y dar el siguiente paso hacia tu futuro.</div>
+    </footer>
+</div>
+</body>
 </html>
 HTML;
 
-    // 6) Generar PDF (ajusta tamaño a tu preferencia)
-    $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait'); // cambia a 'a5' si lo prefieres
+    // 6) Generar PDF en A5 (portrait)
+    $pdf = Pdf::loadHTML($html)->setPaper('a5', 'portrait');
 
     return $pdf->download('informe_vocacional.pdf');
 }
