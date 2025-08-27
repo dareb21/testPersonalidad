@@ -247,7 +247,7 @@ $traitsHtml
 HTML;
 
     // Generar PDF
-    $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
+    $pdf = Pdf::loadHTML($html)->setPaper('a5', 'portrait');
     return $pdf->download('informe_vocacional.pdf');
 }
 }
