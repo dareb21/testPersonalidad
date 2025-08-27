@@ -495,7 +495,7 @@ HTML;
 
     // 6) Generar y devolver el PDF
     // (Ajusta el tamaño de papel a tu preferencia; A4 suele ir mejor con este layout)
-    $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
+    $pdf = Pdf::loadHTML($html)->setPaper('a5', 'portrait');
 
     return $pdf->download('informe_vocacional.pdf');
 }
