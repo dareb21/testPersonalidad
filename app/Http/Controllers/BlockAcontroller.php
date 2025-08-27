@@ -152,8 +152,8 @@ return response()->json($top3);
 
 public function report(Request $request)
 {
-    // 1) Leer y normalizar los traits (puede venir como array o como JSON string)
-    $input = $request->input('traits');
+    // 1) Leer y normalizar "traits" (puede venir como array o como string JSON)
+    $input  = $request->input('traits');
     $traits = $input;
 
     if (is_string($input)) {
@@ -162,8 +162,7 @@ public function report(Request $request)
             if (isset($decoded['traits']) && is_array($decoded['traits'])) {
                 $traits = $decoded['traits'];
             } elseif (is_array($decoded)) {
-                // Podría venir directo como array de rasgos
-                $traits = $decoded;
+                $traits = $decoded; // podría venir como array de objetos directamente
             }
         }
     }
@@ -172,12 +171,10 @@ public function report(Request $request)
         return response()->json(['message' => 'Formato de traits inválido'], 422);
     }
 
-    // 2) (Opcional) Ordenar por score desc para sacar Top 3
-    usort($traits, function ($a, $b) {
-        return ($b['score'] ?? 0) <=> ($a['score'] ?? 0);
-    });
+    // 2) Ordenar por score desc para sacar el Top 3
+    usort($traits, fn($a, $b) => ($b['score'] ?? 0) <=> ($a['score'] ?? 0));
 
-    // 3) Construir HTML dinámico de las tarjetas (Top 3)
+    // 3) Construir HTML de las tarjetas (Top 3)
     $badges  = ['badge-primary', 'badge-secondary', 'badge-tertiary'];
     $lugares = ['Primer Lugar', 'Segundo Lugar', 'Tercer Lugar'];
 
@@ -199,6 +196,7 @@ public function report(Request $request)
     foreach ($traits as $trait) {
         $title = e($trait['title'] ?? '—');
         $desc  = e($trait['description'] ?? '');
+
         $traitsHtml .= '
             <div class="trait-box">
                 <div class="trait-title">'.$title.'</div>
@@ -210,12 +208,12 @@ public function report(Request $request)
                 $traitsHtml .= '<li>'.e($char).'</li>';
             }
         }
-        $traitsHtml .= '   </ul>
+        $traitsHtml .= '</ul>
                 </div>
             </div>';
     }
 
-    // 5) Tu HTML base EXACTO (inyectando $cardsHtml y $traitsHtml en los lugares marcados)
+    // 5) HTML base (TU versión con cambios) inyectando $cardsHtml y $traitsHtml
     $html = <<<HTML
 <!doctype html>
 <html lang="es">
@@ -308,7 +306,6 @@ public function report(Request $request)
             .card-body { text-align: center; }
             .result-rank, .result-name { text-align: center; }
             .card-body .result-rank { color: #475569; font-size: 13px; margin-bottom: 4px; }
-
 
             .result-card .badge {
                 display: inline-block;
@@ -405,58 +402,53 @@ public function report(Request $request)
                 padding: 10px 6px;
                 border-radius: 6px;
                 margin: 10px auto 0 auto;
-                
                 max-width: 760px;
             }
 
-            /* Print-focused styles: make everything larger and stack single-column for PDF */
+            /* Print-focused styles: make everything larger y 3 en línea en PDF */
             @media print {
-                /* General readability */
                 body { padding: 18px; font-size: 14px; }
                 .container { max-width: 100% !important; }
 
-                /* Stack result cards one per row and align badge + content horizontally */
-                    .results-list { text-align: center !important; }
-                    .result-card {
-                        display: inline-block !important;
-                        width: 30% !important;
-                        box-sizing: border-box;
-                        margin-right: 3.333% !important;
-                        margin-bottom: 14px !important;
-                        padding: 12px 16px !important;
-                        box-shadow: none !important;
-                        border: 1px solid #e6eef8 !important;
-                        font-size: 16px !important;
-                        vertical-align: top;
-                        /* Avoid breaking a result card across pages */
-                        break-inside: avoid;
-                        page-break-inside: avoid;
-                    }
-                    .result-card:nth-child(3n) { margin-right: 0 !important; }
+                .results-list { text-align: center !important; font-size: 0 !important; }
+                .result-card {
+                    display: inline-block !important;
+                    width: 31% !important;
+                    box-sizing: border-box;
+                    margin-right: 2% !important;
+                    margin-bottom: 14px !important;
+                    padding: 12px 16px !important;
+                    box-shadow: none !important;
+                    border: 1px solid #e6eef8 !important;
+                    font-size: 14px !important;
+                    vertical-align: top;
+                    break-inside: avoid;
+                    page-break-inside: avoid;
+                }
+                .result-card:nth-child(3n) { margin-right: 0 !important; }
 
-                    /* Badge centered above text in print */
-                    .result-card .badge { display: block; margin: 0 auto 10px auto; width: 56px; height: 56px; line-height: 56px; font-size: 18px; }
-                    .result-card .card-body { display: block; padding-left: 0; text-align: center; }
-                    .result-name { font-size: 20px !important; }
-                    .result-desc { font-size: 15px !important; }
+                .result-card .badge {
+                    display: block; margin: 0 auto 10px auto;
+                    width: 56px; height: 56px; line-height: 56px; font-size: 18px;
+                }
+                .result-card .card-body { display: block; padding-left: 0; text-align: center; }
+                .result-name { font-size: 20px !important; }
+                .result-desc { font-size: 15px !important; }
 
-                /* Traits and boxes more readable */
+                .results-screen { break-inside: avoid; page-break-inside: avoid; }
+                .results-title, .trait-title { break-after: avoid; page-break-after: avoid; }
+
                 .trait-box { break-inside: avoid; page-break-inside: avoid; padding: 16px !important; font-size: 15px !important; }
                 .trait-title { font-size: 18px !important; }
-                .trait-desc { font-size: 15px !important; }
+                .trait-desc  { font-size: 15px !important; }
 
-                /* Avoid breaking inside headings and small elements */
                 .result-name, .trait-title, .results-title, #traits-heading { break-after: avoid; page-break-after: avoid; }
                 .result-name, .result-rank, .result-desc { break-inside: avoid; page-break-inside: avoid; }
 
-                /* Ensure the results list behaves as a block in print so cards flow vertically */
                 .results-list { display: block !important; }
-
-                /* Footer adjustments for print */
                 footer { page-break-inside: avoid; break-inside: avoid; border-radius: 6px; padding: 18px !important; }
             }
 
-            /* Mobile small-screen: stack cards vertically on small screens for readability */
             @media (max-width: 640px) {
                 .result-card { width: 100%; margin-right: 0; margin-bottom: 10px; }
             }
@@ -469,7 +461,6 @@ public function report(Request $request)
                 <p class="lead-2">Este informe refleja tus intereses y fortalezas, ayudándote a descubrir las carreras que mejor se alinean con tu propósito y tu potencial.</p>
             </header>
 
-            <!-- Aquí se coloca la pantalla de los resultados -->
             <section class="results-screen" aria-labelledby="results-heading">
                 <div class="results-title" id="results-heading">Resultados principales</div>
                 <div class="results-list">
@@ -477,7 +468,6 @@ public function report(Request $request)
                 </div>
             </section>
 
-            <!-- Descripciones detalladas -->
             <section class="traits" aria-labelledby="traits-heading">
                 {$traitsHtml}
             </section>
@@ -493,9 +483,8 @@ public function report(Request $request)
 </html>
 HTML;
 
-    // 6) Generar y devolver el PDF
-    // (Ajusta el tamaño de papel a tu preferencia; A4 suele ir mejor con este layout)
-    $pdf = Pdf::loadHTML($html)->setPaper('a5', 'portrait');
+    // 6) Generar PDF (ajusta tamaño a tu preferencia)
+    $pdf = Pdf::loadHTML($html)->setPaper('a5', 'portrait'); // cambia a 'a5' si lo prefieres
 
     return $pdf->download('informe_vocacional.pdf');
 }
