@@ -9,3 +9,4 @@ Route::get('/', function () {
 
 
 Route::post('blockA', [App\Http\Controllers\BlockAcontroller::class, 'blockA']);
+Route::post('/report', [App\Http\Controllers\BlockAcontroller::class, 'report']);
