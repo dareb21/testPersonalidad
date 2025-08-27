@@ -152,69 +152,71 @@ return response()->json($top3);
 
 public function report(Request $request)
 {
-    $traits = $request->traits;
+ $traits = $request->traits;
 
-       $badges = ['badge-primary', 'badge-secondary', 'badge-tertiary'];
-    $lugares = ['Primer Lugar', 'Segundo Lugar', 'Tercer Lugar'];
-    $cardsHtml = '';
+$badges = ['badge-primary', 'badge-secondary', 'badge-tertiary'];
+$lugares = ['Primer Lugar', 'Segundo Lugar', 'Tercer Lugar'];
+$cardsHtml = '';
 
-    foreach (array_slice($traits, 0, 3) as $i => $trait) {
-        $cardsHtml .= '
-        <div class="result-card">
-            <div class="badge '.$badges[$i].'">'.($i+1).'</div>
+// Generar tarjetas principales (primer/segundo/tercer lugar)
+foreach (array_slice($traits, 0, 3) as $i => $trait) {
+    $cardsHtml .= '
+    <div class="result-card">
+        <div class="badge '.$badges[$i].'">'.($i+1).'</div>
+        <div class="card-body">
             <div class="result-rank">'.$lugares[$i].'</div>
             <div class="result-name">'.e($trait['title']).'</div>
-        </div>';
-    }
+        </div>
+    </div>';
+}
 
-    // 🔹 Generar las descripciones detalladas de cada trait
-    $traitsHtml = '';
-    foreach ($traits as $trait) {
-        $traitsHtml .= '
-        <div class="trait-box">
-            <div class="trait-title">'.e($trait['title']).'</div>
-            <div class="trait-desc">'.e($trait['description']).'</div>
-            <div class="trait-list">Características:
-                <ul>';
-        foreach ($trait['characteristics'] as $char) {
-            $traitsHtml .= '<li>'.e($char).'</li>';
-        }
-        $traitsHtml .= '</ul>
-            </div>
-        </div>';
+// Generar las descripciones detalladas de cada trait
+$traitsHtml = '';
+foreach ($traits as $trait) {
+    $traitsHtml .= '
+    <div class="trait-box">
+        <div class="trait-title">'.e($trait['title']).'</div>
+        <div class="trait-desc">'.e($trait['description']).'</div>
+        <div class="trait-list">Características:
+            <ul>';
+    foreach ($trait['characteristics'] as $char) {
+        $traitsHtml .= '<li>'.e($char).'</li>';
     }
+    $traitsHtml .= '</ul>
+        </div>
+    </div>';
+}
 
-    // 🔹 Tu HTML base con los estilos (los pegas tal cual)
-    $html = <<<HTML
+// Tu HTML base con estilos actualizados
+$html = <<<HTML
 <!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8" />
 <title>Informe Vocacional - Tu futuro comienza aquí</title>
 <style>
-/* Aquí pegues todos tus estilos del HTML que compartiste */
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#0f172a; background:#fff; margin:0; padding:26px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.container { max-width: 840px; margin: 0 auto; }
-header { text-align: center; margin-bottom: 22px; }
-h1 { font-size: 32px; margin:0 0 6px 0; color:#0b5fff; line-height:1.05; }
-.lead-2 { font-size:15px; color:#070606; line-height:1.5; margin:6px 0 0 0; }
-.results-screen { background:#f8fafc; padding:16px; margin:16px 0; border-radius:10px; box-shadow:0 6px 18px rgba(15,23,42,0.06); border:1px solid #e6eef8; }
-.results-title { font-size:16px; font-weight:700; color:#0f172a; margin-bottom:12px; text-align:center; }
-.results-list { white-space: normal; }
-.result-card { display:inline-block; vertical-align:top; width:30%; box-sizing:border-box; padding:12px; margin-right:3.333%; background:#fff; border:1px solid #eef6ff; border-radius:8px; text-align:center; font-size:14px; box-shadow:0 6px 12px rgba(15,23,42,0.04); }
-.result-card .badge { display:inline-block; width:44px; height:44px; line-height:44px; border-radius:50%; color:white; font-weight:700; margin-bottom:10px; }
-.badge-primary { background: #0b5fff; }
-.badge-secondary { background: #06b6d4; }
-.badge-tertiary { background: #64748b; }
-.result-rank { font-size:13px; color:#475569; margin-bottom:6px; }
-.result-name { font-size:17px; font-weight:800; margin-bottom:6px; color:#0f172a; text-transform:capitalize; }
-.traits { margin-top:12px; margin-bottom:18px; }
-.trait-box { border:1px solid #eef2ff; padding:14px; margin-bottom:12px; border-radius:8px; background:#fff; box-shadow:0 6px 16px rgba(11,92,255,0.03); }
-.trait-title { font-size:16px; font-weight:800; color:#0b5fff; margin-bottom:6px; }
-.trait-desc { font-size:14px; color:#334155; line-height:1.5; margin-bottom:8px; }
-.trait-list ul { margin:6px 0 0 20px; }
-footer { margin-top:22px; padding:18px; background:#0b5fff; color:#fff; border-radius:10px; text-align:center; }
-.contact-cta { display:block; background:transparent; color:#fff; padding:10px 6px; border-radius:6px; margin:10px auto 0 auto; max-width:760px; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial; color:#0f172a; background:#fff; margin:0; padding:26px; }
+.container { max-width: 840px; margin:0 auto; }
+header { text-align:center; margin-bottom:22px; }
+h1 { font-size:36px; color:#0b5fff; margin-bottom:6px; }
+.lead-2 { font-size:16px; color:#070606; line-height:1.5; margin:6px 0 0; }
+.results-screen { background:#f8fafc; padding:20px; margin:16px 0; border-radius:12px; box-shadow:0 6px 18px rgba(15,23,42,0.06); }
+.results-title { font-size:18px; font-weight:700; text-align:center; margin-bottom:12px; }
+.results-list { display:flex; justify-content:center; flex-wrap:wrap; gap:16px; }
+.result-card { width:28%; background:#fff; padding:16px; border:1px solid #eef6ff; border-radius:10px; text-align:center; font-size:16px; box-shadow:0 6px 16px rgba(15,23,42,0.06); }
+.result-card .badge { display:inline-block; width:50px; height:50px; line-height:50px; border-radius:50%; color:white; font-weight:700; margin-bottom:10px; }
+.badge-primary { background:#0b5fff; }
+.badge-secondary { background:#06b6d4; }
+.badge-tertiary { background:#64748b; }
+.result-rank { font-size:14px; color:#475569; margin-bottom:6px; }
+.result-name { font-size:20px; font-weight:800; color:#0f172a; text-transform:capitalize; }
+.traits { margin-top:20px; margin-bottom:18px; }
+.trait-box { border:1px solid #eef2ff; padding:16px; margin-bottom:14px; border-radius:10px; background:#fff; box-shadow:0 6px 16px rgba(11,92,255,0.03); }
+.trait-title { font-size:18px; font-weight:800; color:#0b5fff; margin-bottom:6px; }
+.trait-desc { font-size:16px; color:#334155; line-height:1.5; margin-bottom:8px; }
+.trait-list ul { margin:6px 0 0 20px; font-size:15px; }
+footer { margin-top:22px; padding:20px; background:#0b5fff; color:#fff; border-radius:10px; text-align:center; }
+.contact-cta { display:block; background:transparent; color:#fff; padding:10px 6px; border-radius:6px; margin:10px auto 0; max-width:760px; }
 </style>
 </head>
 <body>
@@ -235,11 +237,11 @@ $cardsHtml
 $traitsHtml
 </section>
 
-<p style="font-size:15px; margin-top:6px;">Elegir tu carrera es descubrir la mejor versión de ti.</p>
+<p style="font-size:16px; margin-top:10px;">Elegir tu carrera es descubrir la mejor versión de ti.</p>
 
 <footer>
 <p>En USAP creemos en tu talento y estamos listos para acompañarte en este viaje hacia el éxito.</p>
-<div class="contact-cta">📞 Contáctanos al <strong>9434-1344</strong> y agenda una cita con tu Asesor de Admisiones para explorar tus opciones y dar el siguiente paso hacia tu futuro.</div>
+<div class="contact-cta">📞 Contáctanos al <strong>9434-1344</strong> y agenda una cita con tu Asesor de Admisiones.</div>
 </footer>
 </div>
 </body>
