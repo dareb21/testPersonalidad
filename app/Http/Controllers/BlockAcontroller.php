@@ -193,26 +193,75 @@ public function report(Request $request)
 <title>Informe Vocacional - Tu futuro comienza aquí</title>
 <style>
 /* Aquí pegues todos tus estilos del HTML que compartiste */
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#0f172a; background:#fff; margin:0; padding:26px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.container { max-width: 840px; margin: 0 auto; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    color: #0f172a;
+    background: #ffffff;
+    margin: 0;
+    padding: 26px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-size: 16px; /* más grande */
+}
+.container {
+    max-width: 840px;
+    margin: 0 auto;
+    text-align: center; /* centra todo el contenido */
+}
+
 header { text-align: center; margin-bottom: 22px; }
 h1 { font-size: 32px; margin:0 0 6px 0; color:#0b5fff; line-height:1.05; }
 .lead-2 { font-size:15px; color:#070606; line-height:1.5; margin:6px 0 0 0; }
 .results-screen { background:#f8fafc; padding:16px; margin:16px 0; border-radius:10px; box-shadow:0 6px 18px rgba(15,23,42,0.06); border:1px solid #e6eef8; }
 .results-title { font-size:16px; font-weight:700; color:#0f172a; margin-bottom:12px; text-align:center; }
-.results-list { white-space: normal; }
-.result-card { display:inline-block; vertical-align:top; width:30%; box-sizing:border-box; padding:12px; margin-right:3.333%; background:#fff; border:1px solid #eef6ff; border-radius:8px; text-align:center; font-size:14px; box-shadow:0 6px 12px rgba(15,23,42,0.04); }
-.result-card .badge { display:inline-block; width:44px; height:44px; line-height:44px; border-radius:50%; color:white; font-weight:700; margin-bottom:10px; }
+.results-list {
+    display: flex;
+    justify-content: center; /* centra las tarjetas */
+    flex-wrap: wrap;
+    gap: 16px; /* espacio entre tarjetas */
+}
+.result-card {
+    display: inline-block;
+    vertical-align: top;
+    width: 28%; /* más estrecho para que quepan 3 centradas */
+    box-sizing: border-box;
+    padding: 16px; /* más espacio interno */
+    background: #ffffff;
+    border: 1px solid #eef6ff;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 15px; /* un poco más grande */
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+}
+.result-card .badge {
+    width: 48px;
+    height: 48px;
+    line-height: 48px;
+    font-size: 18px;
+}
 .badge-primary { background: #0b5fff; }
 .badge-secondary { background: #06b6d4; }
 .badge-tertiary { background: #64748b; }
 .result-rank { font-size:13px; color:#475569; margin-bottom:6px; }
 .result-name { font-size:17px; font-weight:800; margin-bottom:6px; color:#0f172a; text-transform:capitalize; }
 .traits { margin-top:12px; margin-bottom:18px; }
-.trait-box { border:1px solid #eef2ff; padding:14px; margin-bottom:12px; border-radius:8px; background:#fff; box-shadow:0 6px 16px rgba(11,92,255,0.03); }
-.trait-title { font-size:16px; font-weight:800; color:#0b5fff; margin-bottom:6px; }
-.trait-desc { font-size:14px; color:#334155; line-height:1.5; margin-bottom:8px; }
-.trait-list ul { margin:6px 0 0 20px; }
+.trait-box {
+    border: 1px solid #eef2ff;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(11, 92, 255, 0.04);
+}
+.trait-title {
+    font-size: 18px; /* más grande */
+}
+.trait-desc {
+    font-size: 15px; /* más grande */
+}
+.trait-list ul li {
+    font-size: 14px; /* un poco más grande */
+}
 footer { margin-top:22px; padding:18px; background:#0b5fff; color:#fff; border-radius:10px; text-align:center; }
 .contact-cta { display:block; background:transparent; color:#fff; padding:10px 6px; border-radius:6px; margin:10px auto 0 auto; max-width:760px; }
 </style>
