@@ -171,15 +171,49 @@ public function report(Request $request)
         return response()->json(['message' => 'Formato de traits inválido'], 422);
     }
 
-    // 2) Ordenar por score desc y tomar Top 3 para las tarjetas
+    // 2) Ordenar por score desc y tomar Top 3
     usort($traits, fn($a, $b) => ($b['score'] ?? 0) <=> ($a['score'] ?? 0));
+    $top = array_slice($traits, 0, 3);
 
+    // 2.1) Mapeo de categorías Holland → textos de carreras
+    $careersMap = [
+        'realista'     => ['Realista (R)',      'Arquitectura; Ingeniería Agronómica Administrativa; Ingeniería Industrial; Ingenierías en Tecnología Electrónica, Operaciones y Logística, entre otras'],
+        'investigador' => ['Investigador (I)',  'Ingeniería en Analítica de Datos e Inteligencia de Negocios; Desarrollo de Aplicaciones; Tecnologías Computacionales; Informática Administrativa; Informática y Telecomunicaciones'],
+        'artistico'    => ['Artístico (A)',     'Diseño Gráfico (Licenciatura o Técnico); Ingeniería en Animación y Diseño Digital; Comunicación y Publicidad'],
+        'social'       => ['Social (S)',        'Comunicación y Publicidad (por su interacción social); Administración Turística; Recursos Humanos (Licenciatura en Dirección Estratégica del Talento Humano)'],
+        'emprendedor'  => ['Emprendedor (E)',   'Administración de Empresas; Administración Financiera y Bancaria; Gerencia de Negocios y Emprendimiento; Ingeniería Comercial; Mercadotecnia y Medios Digitales'],
+        'convencional' => ['Convencional (C)',  'Administración de la Producción (Técnico); Informática Administrativa; Administración de Tecnologías de la Información; Negocios Electrónicos'],
+    ];
+
+    // 2.2) Normalizador (minúsculas, sin acentos, sin espacios/puntuación)
+    $normalize = function (?string $s): string {
+        $s = strtolower($s ?? '');
+        $s = strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','ü'=>'u']);
+        return preg_replace('/[^a-z]/', '', $s);
+    };
+
+    // 2.3) Resolver clave de categoría a partir del trait (usa type; fallback title)
+    $resolveKey = function (array $trait) use ($normalize): ?string {
+        $candidates = [];
+        if (!empty($trait['type']))  { $candidates[] = $normalize($trait['type']); }
+        if (!empty($trait['title'])) { $candidates[] = $normalize($trait['title']); }
+
+        foreach ($candidates as $k) {
+            // Sinónimos comunes
+            if ($k === 'ingeniero' || $k === 'ingenierorealista' || $k === 'realistaingeniero') return 'realista';
+            if ($k === 'artistica') return 'artistico';
+            if (in_array($k, ['realista','investigador','artistico','social','emprendedor','convencional'], true)) {
+                return $k;
+            }
+        }
+        return null;
+    };
+
+    // 3) Tarjetas (fila única con TABLE para DomPDF)
     $badges  = ['badge-primary', 'badge-secondary', 'badge-tertiary'];
     $lugares = ['Primer Lugar', 'Segundo Lugar', 'Tercer Lugar'];
 
-    // 3) Tarjetas en UNA FILA usando TABLE (DomPDF lo respeta mejor que inline-block)
     $cardsHtml = '<table class="cards"><tr>';
-    $top = array_slice($traits, 0, 3);
     foreach ($top as $i => $trait) {
         $title = e($trait['title'] ?? '—');
         $cardsHtml .= '
@@ -193,13 +227,12 @@ public function report(Request $request)
                 </div>
             </td>';
     }
-    // Rellenar celdas si hay menos de 3 (para mantener la fila)
     for ($i = count($top); $i < 3; $i++) {
         $cardsHtml .= '<td></td>';
     }
     $cardsHtml .= '</tr></table>';
 
-    // 4) Lista completa de traits (descripción + características)
+    // 4) Descripciones completas de traits
     $traitsHtml = '';
     foreach ($traits as $trait) {
         $title = e($trait['title'] ?? '—');
@@ -220,7 +253,26 @@ public function report(Request $request)
             </div>';
     }
 
-    // 5) HTML base optimizado para A5 (3 tarjetas en fila + tipografías compactas)
+    // 5) Bloque de "Ejemplo de Carreras..." SOLO para los Top 3
+    $careersHtml = '';
+    $lines = [];
+    foreach ($top as $trait) {
+        $key = $resolveKey($trait);
+        if ($key && isset($careersMap[$key])) {
+            [$label, $text] = $careersMap[$key];
+            // e() no es necesario en label/text fijos, pero por seguridad:
+            $lines[] = '<div class="career-item"><strong>'.e($label).':</strong> '.e($text).'</div>';
+        }
+    }
+    if ($lines) {
+        $careersHtml = '
+        <section class="careers" aria-labelledby="careers-heading">
+            <div class="careers-title" id="careers-heading">Ejemplo de Carreras de USAP afines con tu personalidad e intereses:</div>
+            '.implode("\n", $lines).'
+        </section>';
+    }
+
+    // 6) HTML A5 con la nueva sección antes del footer
     $html = <<<HTML
 <!doctype html>
 <html lang="es">
@@ -229,7 +281,6 @@ public function report(Request $request)
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Informe Vocacional - Tu futuro comienza aquí</title>
 <style>
-    /* Dimensiones y ajustes para A5 */
     @page { margin: 10mm 8mm; }
 
     body {
@@ -237,26 +288,19 @@ public function report(Request $request)
         color: #0f172a;
         background: #ffffff;
         margin: 0;
-        padding: 8px 6px; /* más compacto para A5 */
+        padding: 8px 6px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-        font-size: 12px; /* base un poco más pequeña */
+        font-size: 12px;
         line-height: 1.35;
     }
 
-    .container {
-        width: 100%;
-        max-width: 100%;
-        margin: 0 auto;
-    }
+    .container { width: 100%; max-width: 100%; margin: 0 auto; }
 
     header { text-align: center; margin-bottom: 12px; }
     h1 { font-size: 22px; margin: 0 0 6px 0; color: #0b5fff; line-height: 1.1; }
-
-    .lead { font-size: 12px; color: #ffffff; line-height: 1.45; margin: 4px 0 0 0; }
     .lead-2 { font-size: 12px; color: #070606; line-height: 1.45; margin: 4px 0 0 0; }
 
-    /* Resultados principales */
     .results-screen {
         background: #f8fafc;
         padding: 10px;
@@ -264,89 +308,49 @@ public function report(Request $request)
         border-radius: 8px;
         box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
         border: 1px solid #e6eef8;
-        break-inside: avoid;
-        page-break-inside: avoid;
+        break-inside: avoid; page-break-inside: avoid;
     }
+    .results-title { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-align: center; }
 
-    .results-title {
-        font-size: 13px;
-        font-weight: 700;
-        color: #0f172a;
-        margin-bottom: 8px;
-        text-align: center;
-    }
-
-    /* Tabla para asegurar 3 columnas */
-    .cards {
-        width: 100%;
-        table-layout: fixed;
-        border-collapse: separate;
-        border-spacing: 6px; /* separación entre tarjetas */
-        margin: 0 auto;
-    }
-    .cards td {
-        width: 33.33%;
-        padding: 0;
-        vertical-align: top;
-    }
+    .cards { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 6px; margin: 0 auto; }
+    .cards td { width: 33.33%; padding: 0; vertical-align: top; }
 
     .result-card {
-        width: 100%;
-        background: #ffffff;
-        padding: 10px;
-        border: 1px solid #eef6ff;
-        border-radius: 8px;
-        text-align: center;
-        font-size: 12px;
-        box-shadow: 0 4px 8px rgba(15, 23, 42, 0.04);
-        break-inside: avoid;
-        page-break-inside: avoid;
-        min-height: 90px;
+        width: 100%; background: #ffffff; padding: 10px; border: 1px solid #eef6ff; border-radius: 8px;
+        text-align: center; font-size: 12px; box-shadow: 0 4px 8px rgba(15, 23, 42, 0.04);
+        break-inside: avoid; page-break-inside: avoid; min-height: 90px;
     }
-
     .result-card .badge {
-        display: inline-block;
-        width: 34px;
-        height: 34px;
-        line-height: 34px;
-        border-radius: 50%;
-        color: white;
-        font-weight: 700;
-        margin-bottom: 6px;
-        font-size: 14px;
+        display: inline-block; width: 34px; height: 34px; line-height: 34px; border-radius: 50%;
+        color: white; font-weight: 700; margin-bottom: 6px; font-size: 14px;
     }
     .badge-primary { background: #0b5fff; }
     .badge-secondary { background: #06b6d4; }
     .badge-tertiary { background: #64748b; }
-
     .result-rank { font-size: 11px; color: #475569; margin-bottom: 4px; }
     .result-name { font-size: 13px; font-weight: 800; margin-bottom: 4px; color: #0f172a; text-transform: capitalize; }
 
-    /* Traits */
     .traits { margin-top: 10px; margin-bottom: 12px; }
     .trait-box {
-        border: 1px solid #eef2ff;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        background: #ffffff;
-        box-shadow: 0 4px 10px rgba(11, 92, 255, 0.03);
-        break-inside: avoid;
-        page-break-inside: avoid;
+        border: 1px solid #eef2ff; padding: 10px; margin-bottom: 10px; border-radius: 8px; background: #ffffff;
+        box-shadow: 0 4px 10px rgba(11, 92, 255, 0.03); break-inside: avoid; page-break-inside: avoid;
     }
     .trait-title { font-size: 13px; font-weight: 800; color: #0b5fff; margin-bottom: 4px; }
     .trait-desc  { font-size: 12px; color: #334155; line-height: 1.45; margin-bottom: 6px; word-wrap: break-word; }
     .trait-list ul { margin: 6px 0 0 18px; font-size: 12px; }
 
+    /* Nueva sección de carreras */
+    .careers {
+        border: 1px solid #e6eef8; background: #fff; border-radius: 8px;
+        padding: 10px; margin: 8px 0 10px 0; break-inside: avoid; page-break-inside: avoid;
+    }
+    .careers-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; color:#0f172a; }
+    .career-item { font-size: 12px; margin-bottom: 4px; }
+    .career-item strong { color:#0b5fff; }
+
     footer {
-        margin-top: 14px;
-        padding: 12px;
-        background: #0b5fff;
-        color: #ffffff;
-        border-radius: 8px;
-        text-align: center;
-        break-inside: avoid;
-        page-break-inside: avoid;
+        margin-top: 12px; padding: 12px; background: #0b5fff; color: #ffffff;
+        border-radius: 8px; text-align: center; break-inside: avoid; page-break-inside: avoid;
     }
     .contact-cta { display: block; background: transparent; color: #ffffff; padding: 8px 6px; border-radius: 6px; margin: 8px auto 0; max-width: 100%; font-size: 12px; }
 </style>
@@ -367,6 +371,8 @@ public function report(Request $request)
         {$traitsHtml}
     </section>
 
+    {$careersHtml}
+
     <p style="font-size:12px; margin-top:6px;">Elegir tu carrera es descubrir la mejor versión de ti.</p>
 
     <footer>
@@ -378,9 +384,10 @@ public function report(Request $request)
 </html>
 HTML;
 
-    // 6) Generar PDF en A5 (portrait)
+    // 7) PDF A5 (portrait)
     $pdf = Pdf::loadHTML($html)->setPaper('a5', 'portrait');
 
     return $pdf->download('informe_vocacional.pdf');
 }
+
 }
